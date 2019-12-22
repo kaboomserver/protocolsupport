@@ -1,5 +1,6 @@
 package protocolsupport.utils;
 
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -8,10 +9,14 @@ import java.lang.reflect.Modifier;
 public class ReflectionUtils {
 
 	public static void setStaticFinalField(Field field, Object newValue) throws NoSuchFieldException, IllegalAccessException {
-		ReflectionUtils.setAccessible(Field.class.getDeclaredField("modifiers")).setInt(field, field.getModifiers() & ~Modifier.FINAL);
-		ReflectionUtils.setAccessible(Field.class.getDeclaredField("root")).set(field, null);
-		ReflectionUtils.setAccessible(Field.class.getDeclaredField("overrideFieldAccessor")).set(field, null);
-		ReflectionUtils.setAccessible(field).set(null, newValue);
+		try {
+			((MethodHandles.Lookup) setAccessible(MethodHandles.Lookup.class.getDeclaredField("IMPL_LOOKUP")).get(null))
+			.findSetter(Field.class, "modifiers", int.class)
+			.invokeExact(field, field.getModifiers() & ~Modifier.FINAL);
+			field.set(null, newValue);
+		} catch (Throwable e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	public static <T extends AccessibleObject> T setAccessible(T object) {
